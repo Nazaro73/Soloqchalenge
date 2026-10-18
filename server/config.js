@@ -1,14 +1,14 @@
-// Joueurs du challenge et leur ajustement de points (handicap / bonus)
+// Joueurs du challenge, leur prénom et leur ajustement de points (handicap / bonus)
 export const PLAYERS = [
-  { gameName: 'CatrauledMan', tagLine: '9161', adjustment: -600 },
-  { gameName: 'CringsGorder', tagLine: '7967', adjustment: 300 },
-  { gameName: 'Cerageirth', tagLine: 'EUW', adjustment: -200 },
-  { gameName: 'Fouteur2Bordel', tagLine: 'DZ73', adjustment: -200 },
-  { gameName: 'Rebzapdnyar', tagLine: 'EUW', adjustment: -200 },
-  { gameName: 'Tokebscarrect', tagLine: '1478', adjustment: 300 },
-  { gameName: 'Wellooz73', tagLine: 'EUW', adjustment: 600 },
-  { gameName: 'neterent', tagLine: '7657', adjustment: 300 },
-  { gameName: 'Giefilic', tagLine: '9625', adjustment: 0 },
+  { gameName: 'CatrauledMan', tagLine: '9161', realName: 'Isman', adjustment: -600 },
+  { gameName: 'CringsGorder', tagLine: '7967', realName: 'Hatim', adjustment: 300 },
+  { gameName: 'Cerageirth', tagLine: 'EUW', realName: 'Anass', adjustment: -200 },
+  { gameName: 'Fouteur2Bordel', tagLine: 'DZ73', realName: 'Abdel-Rahim', adjustment: -200 },
+  { gameName: 'Rebzapdnyar', tagLine: 'EUW', realName: 'Chahine', adjustment: -200 },
+  { gameName: 'Tokebscarrect', tagLine: '1478', realName: 'Ouneiss', adjustment: 300 },
+  { gameName: 'Wellooz73', tagLine: 'EUW', realName: 'Abdel-Halim', adjustment: 600 },
+  { gameName: 'neterent', tagLine: '7657', realName: 'Jule', adjustment: 300 },
+  { gameName: 'Giefilic', tagLine: '9625', realName: 'Thibault', adjustment: 0 },
 ];
 
 // Routage Riot : compte et matchs (regional), LoL (plateforme)

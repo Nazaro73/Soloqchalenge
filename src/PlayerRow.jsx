@@ -25,10 +25,13 @@ export function Avatar({ player, size = '' }) {
 
 export function PlayerName({ player }) {
   return (
-    <a className="name" href={opggUrl(player.gameName, player.tagLine)} target="_blank" rel="noreferrer">
-      {player.gameName}
-      <span className="tag">#{player.tagLine}</span>
-    </a>
+    <span className="player-name">
+      <a className="name" href={opggUrl(player.gameName, player.tagLine)} target="_blank" rel="noreferrer">
+        {player.gameName}
+        <span className="tag">#{player.tagLine}</span>
+      </a>
+      {player.realName && <span className="real-name">{player.realName}</span>}
+    </span>
   );
 }
 

@@ -75,6 +75,7 @@ async function fetchPlayer(player) {
       riotId,
       gameName: player.gameName,
       tagLine: player.tagLine,
+      realName: player.realName,
       profileIconId: summoner.profileIconId,
       summonerLevel: summoner.summonerLevel,
       tier: solo?.tier ?? null,
@@ -97,6 +98,7 @@ async function fetchPlayer(player) {
       // Données précédentes plutôt qu'une erreur ; le handicap vient toujours de la config
       return {
         ...previous,
+        realName: player.realName,
         inGame: null,
         stale: true,
         adjustment: player.adjustment,
@@ -107,6 +109,7 @@ async function fetchPlayer(player) {
       riotId,
       gameName: player.gameName,
       tagLine: player.tagLine,
+      realName: player.realName,
       error: errorLabel(err.status),
       basePoints: 0,
       adjustment: player.adjustment,
@@ -193,11 +196,13 @@ export async function liveGameHandler(gameName, tagLine) {
       game.participants.map(async (p) => {
         const entries = p.puuid ? await getLeagueEntries(p.puuid, LIVE_RANK_TTL).catch(() => null) : null;
         const solo = soloQueue(entries);
+        const challenger = PLAYERS.find((cp) => riotIdOf(cp).toLowerCase() === p.riotId?.toLowerCase());
         return {
           riotId: p.riotId ?? 'Bot',
           teamId: p.teamId,
           isTracked: p.puuid === puuid,
-          isChallenger: PLAYERS.some((cp) => riotIdOf(cp) === p.riotId),
+          isChallenger: Boolean(challenger),
+          realName: challenger?.realName ?? null,
           champion: sd.champion(p.championId),
           spells: [sd.spell(p.spell1Id), sd.spell(p.spell2Id)],
           keystone: sd.perk(p.perks?.perkIds?.[0]),

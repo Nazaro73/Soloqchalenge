@@ -285,6 +285,16 @@ a { color: inherit; }
   transition: color 0.2s var(--ease);
 }
 a.name:hover { color: var(--gold-2); }
+.player-name { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.real-name {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--gold-2);
+}
+.podium-card .player-name { align-items: center; max-width: 100%; }
+.podium-card .real-name { font-size: 0.95rem; }
 .tag { color: var(--muted); font-weight: 400; margin-left: 2px; }
 
 .alert {

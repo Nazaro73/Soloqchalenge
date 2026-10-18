@@ -46,7 +46,10 @@ function Participant({ p }) {
       </span>
       <span className="participant-name">
         <span className="name">{p.riotId}</span>
-        <span className="games">{p.champion.name}</span>
+        <span className="games">
+          {p.realName && <span className="real-name">{p.realName} · </span>}
+          {p.champion.name}
+        </span>
       </span>
       <span className="participant-rank">
         <RankEmblem className="emblem-sm" tier={p.rank?.tier} />

@@ -41,6 +41,7 @@ function aggregate({ player, riotId, matches }) {
     riotId,
     gameName: player.gameName,
     tagLine: player.tagLine,
+    realName: player.realName,
     list: games,
     games: games.length,
     wins: games.filter((g) => g.win).length,
@@ -76,7 +77,13 @@ const RANKINGS = [
   'winStreak',
 ];
 
-const ref = (p) => ({ riotId: p.riotId, gameName: p.gameName, tagLine: p.tagLine, games: p.games });
+const ref = (p) => ({
+  riotId: p.riotId,
+  gameName: p.gameName,
+  tagLine: p.tagLine,
+  realName: p.realName,
+  games: p.games,
+});
 
 export function computeStats(synced, sd) {
   const players = synced.map(aggregate);

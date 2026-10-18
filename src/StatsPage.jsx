@@ -45,7 +45,10 @@ function PlayerTag({ entry, board }) {
           </span>
         )}
       </span>
-      <span className="name">{entry.gameName}</span>
+      <span className="player-name">
+        <span className="name">{entry.gameName}</span>
+        {entry.realName && <span className="real-name">{entry.realName}</span>}
+      </span>
     </span>
   );
 }
