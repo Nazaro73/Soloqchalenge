@@ -23,6 +23,11 @@ Joueurs et handicaps : `server/config.js`.
 
 ## Production
 
+Sur Vercel : le site React est servi en statique et l'API tourne dans les fonctions du dossier `api/`.
+Ajouter la variable d'environnement `RIOT_API_KEY` dans Settings → Environment Variables du projet Vercel.
+
+Sur un serveur Node classique :
+
 ```bash
 npm run build
 npm start              # sert l'API et le site sur le port 3001
