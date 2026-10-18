@@ -69,7 +69,7 @@ export const PLAYERS = [
     gameName: 'Shacekko73',
     tagLine: 'EUW',
     realName: 'Antonio',
-    adjustment: 0,
+    adjustment: -200,
     puuid: 'dU3ieGlD33EoJ8YOqPQdCsURO1Kgu8rNGJRFmrbQt3Tn4tWHZtZ7jUiamjODeOmYA5EpiBad-hiS0w',
   },
 ];
