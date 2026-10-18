@@ -1,11 +1,11 @@
 // Joueurs du challenge et leur ajustement de points (handicap / bonus)
 export const PLAYERS = [
   { gameName: 'CatrauledMan', tagLine: '9161', adjustment: -600 },
-  { gameName: 'CringsGorder', tagLine: '7967', adjustment: 400 },
+  { gameName: 'CringsGorder', tagLine: '7967', adjustment: 300 },
   { gameName: 'Cerageirth', tagLine: 'EUW', adjustment: -200 },
   { gameName: 'Fouteur2Bordel', tagLine: 'DZ73', adjustment: -200 },
   { gameName: 'Rebzapdnyar', tagLine: 'EUW', adjustment: -200 },
-  { gameName: 'Tokebscarrect', tagLine: '1478', adjustment: 400 },
+  { gameName: 'Tokebscarrect', tagLine: '1478', adjustment: 300 },
   { gameName: 'Wellooz73', tagLine: 'EUW', adjustment: 600 },
   { gameName: 'neterent', tagLine: '7657', adjustment: 300 },
   { gameName: 'Giefilic', tagLine: '9625', adjustment: 0 },
