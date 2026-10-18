@@ -2,7 +2,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { leaderboardHandler, liveGameHandler } from './handlers.js';
+import { leaderboardHandler, liveGameHandler, statsHandler } from './handlers.js';
 
 if (!process.env.RIOT_API_KEY) {
   console.error('RIOT_API_KEY manquante dans .env');
@@ -14,6 +14,11 @@ const PORT = process.env.PORT || 3001;
 
 app.get('/api/leaderboard', async (req, res) => {
   const { status, body } = await leaderboardHandler();
+  res.status(status).json(body);
+});
+
+app.get('/api/stats', async (req, res) => {
+  const { status, body } = await statsHandler();
   res.status(status).json(body);
 });
 

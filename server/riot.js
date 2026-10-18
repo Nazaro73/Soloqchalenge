@@ -61,7 +61,6 @@ function cached(store, key, ttl, fn) {
 
 const puuidStore = new Map();
 const leagueStore = new Map();
-const matchStore = new Map();
 
 export function getPuuid(gameName, tagLine) {
   return cached(puuidStore, `${gameName}#${tagLine}`.toLowerCase(), Infinity, async () => {
@@ -92,15 +91,12 @@ export async function getActiveGame(puuid) {
   }
 }
 
-export function getMatchIds(puuid, { queue, count }) {
-  return riotFetch(
-    `${REGIONAL_HOST}/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=${queue}&count=${count}`
-  );
+export function getMatchIds(puuid, params) {
+  const query = new URLSearchParams(params).toString();
+  return riotFetch(`${REGIONAL_HOST}/lol/match/v5/matches/by-puuid/${puuid}/ids?${query}`);
 }
 
-// Une partie terminée ne change plus : cache permanent
+// Pas de cache ici : les parties sont résumées puis stockées (voir sync.js)
 export function getMatch(matchId) {
-  return cached(matchStore, matchId, Infinity, () =>
-    riotFetch(`${REGIONAL_HOST}/lol/match/v5/matches/${matchId}`)
-  );
+  return riotFetch(`${REGIONAL_HOST}/lol/match/v5/matches/${matchId}`);
 }

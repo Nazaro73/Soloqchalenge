@@ -23,6 +23,10 @@ export const CACHE_TTL = 60_000;
 // Durée du cache des rangs des joueurs adverses/alliés en partie (ms)
 export const LIVE_RANK_TTL = 5 * 60_000;
 
-// Nombre de parties classées solo utilisées pour le KDA moyen
-export const KDA_GAMES = 10;
 export const RANKED_SOLO_QUEUE = 420;
+
+// Début du challenge : seules les parties classées solo jouées après cette date comptent
+export const CHALLENGE_START = process.env.CHALLENGE_START ?? '2026-10-18T00:00:00+02:00';
+
+// Nombre max de nouvelles parties récupérées par synchronisation (respect des limites API)
+export const MATCH_SYNC_BUDGET = 40;

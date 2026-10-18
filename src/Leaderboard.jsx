@@ -1,3 +1,4 @@
+import Nav from './Nav.jsx';
 import PlayerRow from './PlayerRow.jsx';
 import { usePolling } from './usePolling.js';
 
@@ -8,6 +9,7 @@ export default function Leaderboard() {
 
   return (
     <div className="page">
+      <Nav />
       <header className="header">
         <h1>SoloQ Challenge</h1>
         <p className="subtitle">Points = LP depuis Fer IV, ajustés par le handicap de chaque joueur</p>

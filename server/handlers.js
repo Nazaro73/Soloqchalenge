@@ -1,8 +1,9 @@
 // Logique des routes API, partagée entre Express (local) et les fonctions Vercel
-import { PLAYERS, CACHE_TTL, LIVE_RANK_TTL } from './config.js';
+import { PLAYERS, CACHE_TTL, LIVE_RANK_TTL, CHALLENGE_START } from './config.js';
 import { getPuuid, getSummoner, getLeagueEntries, getActiveGame } from './riot.js';
 import { rankToPoints } from './points.js';
-import { getRecentKda } from './stats.js';
+import { challengeGames, computeStats, kdaOf } from './stats.js';
+import { syncMatches } from './sync.js';
 import { getStaticData, queueName } from './staticData.js';
 
 function errorLabel(status) {
@@ -32,14 +33,10 @@ async function fetchPlayer(player) {
   try {
     const puuid = await getPuuid(player.gameName, player.tagLine);
 
-    const [summoner, entries, activeGame, kda, staticData] = await Promise.all([
+    const [summoner, entries, activeGame, staticData] = await Promise.all([
       getSummoner(puuid),
       getLeagueEntries(puuid),
       getActiveGame(puuid),
-      getRecentKda(puuid).catch((err) => {
-        console.error(`KDA indisponible pour ${riotId}:`, err.message);
-        return null;
-      }),
       getStaticData(),
     ]);
     const solo = soloQueue(entries);
@@ -68,7 +65,6 @@ async function fetchPlayer(player) {
       wins: solo?.wins ?? 0,
       losses: solo?.losses ?? 0,
       hotStreak: solo?.hotStreak ?? false,
-      kda,
       inGame,
       basePoints,
       adjustment: player.adjustment,
@@ -91,9 +87,21 @@ async function fetchPlayer(player) {
 let leaderboardCache = { data: null, fetchedAt: 0 };
 let leaderboardInFlight = null;
 
+function safeSync() {
+  return syncMatches().catch((err) => {
+    console.error('Synchro des parties :', err.message);
+    return [];
+  });
+}
+
 async function buildLeaderboard() {
   const now = Date.now();
-  const players = await Promise.all(PLAYERS.map(fetchPlayer));
+  const [players, synced] = await Promise.all([Promise.all(PLAYERS.map(fetchPlayer)), safeSync()]);
+  // KDA moyen sur toutes les parties du challenge
+  for (const p of players) {
+    const s = synced.find((x) => x.riotId === p.riotId);
+    p.kda = s ? kdaOf(challengeGames(s.matches)) : null;
+  }
   players.sort((a, b) => b.totalPoints - a.totalPoints);
   const data = { updatedAt: now, players };
   // On ne met en cache que les résultats complets, pour réessayer vite en cas d'erreur
@@ -112,6 +120,26 @@ export async function leaderboardHandler() {
   leaderboardInFlight ??= buildLeaderboard().finally(() => (leaderboardInFlight = null));
   const data = await leaderboardInFlight;
   return { status: 200, body: data, cacheable: data.players.every((p) => !p.error) };
+}
+
+let statsCache = { data: null, fetchedAt: 0 };
+
+export async function statsHandler() {
+  if (!process.env.RIOT_API_KEY) return missingKey();
+
+  if (statsCache.data && Date.now() - statsCache.fetchedAt < CACHE_TTL) {
+    return { status: 200, body: statsCache.data, cacheable: true };
+  }
+  const [synced, sd] = await Promise.all([safeSync(), getStaticData()]);
+  const complete = synced.length === PLAYERS.length && synced.every((s) => !s.error);
+  const data = {
+    updatedAt: Date.now(),
+    challengeStart: CHALLENGE_START,
+    pending: synced.reduce((n, s) => n + s.pending, 0),
+    ...computeStats(synced, sd),
+  };
+  if (complete) statsCache = { data, fetchedAt: Date.now() };
+  return { status: 200, body: data, cacheable: complete && data.pending === 0 };
 }
 
 export async function liveGameHandler(gameName, tagLine) {
