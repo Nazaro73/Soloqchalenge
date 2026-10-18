@@ -66,11 +66,11 @@ export const PLAYERS = [
     puuid: 'sRVoAg8_RaU0u-OCTFr0DciXnREM2U2Z-IuMO1Bimh7uTMTKWr-tnkfgyZ9g8xGrOeSLOxlkTwz7og',
   },
   {
-    gameName: 'Shacekko73',
-    tagLine: 'EUW',
+    gameName: 'Monkie',
+    tagLine: '5147',
     realName: 'Antonio',
     adjustment: -200,
-    puuid: 'dU3ieGlD33EoJ8YOqPQdCsURO1Kgu8rNGJRFmrbQt3Tn4tWHZtZ7jUiamjODeOmYA5EpiBad-hiS0w',
+    puuid: '5ipwnrtG0b9ahRV807349iMC7lpbUi2pWCOgOytlPtKq6o-mJobneN5rkL0NabAcnpCTYf6SYLF0JA',
   },
 ];
 
