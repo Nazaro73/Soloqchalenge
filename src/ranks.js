@@ -19,6 +19,10 @@ export function formatRank(tier, rank) {
   return APEX.includes(tier) ? label : `${label} ${rank}`;
 }
 
+export function tierClass(tier) {
+  return `tier-${(tier ?? 'unranked').toLowerCase()}`;
+}
+
 export function emblemUrl(tier) {
   return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-${tier.toLowerCase()}.png`;
 }

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "node --watch-path=server --watch-path=.env --env-file=.env server/index.js",
+    "dev:server": "node --watch-path=server --env-file=.env server/index.js",
     "dev:client": "vite",
     "build": "vite build",
     "start": "node --env-file=.env server/index.js"

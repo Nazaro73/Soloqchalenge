@@ -68,6 +68,7 @@ export async function getStaticData() {
       id,
       name: data.champions.get(id)?.name ?? `Champion ${id}`,
       icon: `${CDRAGON}/v1/champion-icons/${id}.png`,
+      splash: `https://cdn.communitydragon.org/latest/champion/${id}/splash-art/centered`,
     }),
     spell: (id) => {
       const s = data.spells.get(id);

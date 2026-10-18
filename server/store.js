@@ -51,6 +51,7 @@ const fileStore = {
     return (await readAll())[puuid] ?? {};
   },
   save(puuid, entries) {
+    if (Object.keys(entries).length === 0) return Promise.resolve();
     // Écritures en série pour éviter d'écraser les données d'un autre joueur
     const write = fileLock.then(async () => {
       const all = await readAll();

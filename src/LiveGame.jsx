@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { formatRank } from './ranks.js';
+import { formatRank, tierClass } from './ranks.js';
 import RankEmblem from './RankEmblem.jsx';
 import { usePolling } from './usePolling.js';
 
@@ -51,7 +51,7 @@ function Participant({ p }) {
       <span className="participant-rank">
         <RankEmblem className="emblem-sm" tier={p.rank?.tier} />
         <span>
-          <span className="rank-name">{formatRank(p.rank?.tier, p.rank?.rank)}</span>
+          <span className={`rank-name ${tierClass(p.rank?.tier)}`}>{formatRank(p.rank?.tier, p.rank?.rank)}</span>
           {p.rank && <span className="lp">{p.rank.leaguePoints} LP</span>}
         </span>
       </span>
@@ -81,30 +81,39 @@ export default function LiveGame() {
       : data.gameLength
     : 0;
 
+  const tracked = data?.inGame ? data.participants.find((p) => p.isTracked) : null;
+
   return (
     <div className="page page-wide">
       <Link className="back" to="/">
-        ← Classement
+        ‹ Retour au classement
       </Link>
 
-      <header className="header">
-        <h1>
-          {gameName}
-          <span className="tag">#{tagLine}</span>
-        </h1>
-        {data?.inGame && (
-          <p className="subtitle">
-            <span className="live-pill">● En direct</span> {data.queueName} ·{' '}
-            {data.gameStartTime > 0 ? formatDuration(elapsed) : 'Écran de chargement'}
-          </p>
-        )}
+      <header className="live-banner frame">
+        {tracked && <img className="live-splash" src={tracked.champion.splash} alt="" />}
+        <div className="live-banner-content">
+          {data?.inGame && <span className="live-pill">En direct</span>}
+          <h1>
+            {gameName}
+            <span className="tag">#{tagLine}</span>
+          </h1>
+          {data?.inGame && (
+            <p className="live-meta">
+              {tracked && <strong>{tracked.champion.name}</strong>}
+              <span>{data.queueName}</span>
+              <span className="live-timer">
+                {data.gameStartTime > 0 ? formatDuration(elapsed) : 'Écran de chargement'}
+              </span>
+            </p>
+          )}
+        </div>
       </header>
 
-      {error && <div className="error">{error}</div>}
-      {!data && loading && <div className="loading">Chargement…</div>}
+      {error && <div className="alert">{error}</div>}
+      {!data && loading && <div className="loading">Chargement de la partie…</div>}
 
       {data && !data.inGame && (
-        <div className="empty-state">
+        <div className="empty-state frame">
           {gameName} n’est pas en partie pour le moment.
           <Link to="/">Retour au classement</Link>
         </div>
@@ -117,7 +126,7 @@ export default function LiveGame() {
             const bans = data.bans.filter((b) => b.teamId === team.id);
             if (members.length === 0) return null;
             return (
-              <section key={team.id} className={`team ${team.className}`}>
+              <section key={team.id} className={`team frame ${team.className}`}>
                 <div className="team-head">
                   <span>{team.name}</span>
                   {bans.length > 0 && (

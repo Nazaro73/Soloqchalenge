@@ -1,4 +1,4 @@
-import Nav from './Nav.jsx';
+import { SectionTitle } from './Ornament.jsx';
 import { profileIconUrl } from './ranks.js';
 import { formatDate, formatDecimal, formatInt, formatPercent, formatPlaytime, plural } from './format.js';
 import { usePolling } from './usePolling.js';
@@ -37,9 +37,13 @@ function PlayerTag({ entry, board }) {
   const info = board[index];
   return (
     <span className="stat-player">
-      <span className="icon-wrap">
-        <img className="icon icon-sm" src={profileIconUrl(info?.profileIconId)} alt="" />
-        {index >= 0 && <span className="board-pos">{index + 1}</span>}
+      <span className="avatar avatar-sm">
+        <img src={profileIconUrl(info?.profileIconId)} alt="" />
+        {index >= 0 && (
+          <span className="board-pos" title={`${index + 1}e au classement`}>
+            {index + 1}
+          </span>
+        )}
       </span>
       <span className="name">{entry.gameName}</span>
     </span>
@@ -48,7 +52,7 @@ function PlayerTag({ entry, board }) {
 
 function Card({ title, children, className = '' }) {
   return (
-    <section className={`card ${className}`}>
+    <section className={`card frame ${className}`}>
       <h2>{title}</h2>
       {children}
     </section>
@@ -101,17 +105,15 @@ export default function StatsPage() {
 
   return (
     <div className="page page-wide">
-      <Nav />
-      <header className="header">
-        <h1>Statistiques</h1>
-        <p className="subtitle">
-          Parties classées solo depuis le{' '}
-          {data ? formatDate(data.challengeStart) : '…'}, remakes exclus
-        </p>
-      </header>
+      <SectionTitle eyebrow="Le challenge en chiffres">Statistiques</SectionTitle>
+      <p className="subtitle">
+        Parties classées solo depuis le {data ? formatDate(data.challengeStart) : '…'}, remakes exclus
+      </p>
 
-      {stats.error && <div className="error">Impossible de charger les statistiques : {stats.error}</div>}
-      {!data && stats.loading && <div className="loading">Chargement… (la première synchro peut prendre un moment)</div>}
+      {stats.error && <div className="alert">Impossible de charger les statistiques : {stats.error}</div>}
+      {!data && stats.loading && (
+        <div className="loading">Analyse des parties… (la première synchro peut prendre un moment)</div>
+      )}
 
       {data && (
         <>
@@ -123,19 +125,19 @@ export default function StatsPage() {
           )}
 
           <div className="global-stats">
-            <div>
+            <div className="frame">
               <span className="big">{formatInt(data.global.games)}</span>
               <span>games</span>
             </div>
-            <div>
+            <div className="frame">
               <span className="big good">{formatInt(data.global.wins)}</span>
               <span>victoires</span>
             </div>
-            <div>
+            <div className="frame">
               <span className="big bad">{formatInt(data.global.losses)}</span>
               <span>défaites</span>
             </div>
-            <div>
+            <div className="frame">
               <span className="big">{formatPlaytime(data.global.timePlayed)}</span>
               <span>de jeu</span>
             </div>
