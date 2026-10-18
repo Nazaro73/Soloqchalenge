@@ -131,10 +131,14 @@ let leaderboardInFlight = null;
 async function buildLeaderboard() {
   await seedLastGood();
   const [players, synced] = await Promise.all([Promise.all(PLAYERS.map(fetchPlayer)), safeSync()]);
-  // KDA moyen sur toutes les parties du challenge
+  // KDA moyen et bilan V/D sur les parties du challenge (placements compris :
+  // Riot n'affiche ni rang ni victoires/défaites tant que les 5 placements ne sont pas finis)
   for (const p of players) {
     const s = synced.find((x) => x.riotId === p.riotId);
-    p.kda = s ? kdaOf(challengeGames(s.matches)) : null;
+    const games = s ? challengeGames(s.matches) : [];
+    p.kda = kdaOf(games);
+    const wins = games.filter((g) => g.win).length;
+    p.record = games.length > 0 ? { games: games.length, wins, losses: games.length - wins } : null;
   }
   players.sort((a, b) => b.totalPoints - a.totalPoints);
 
