@@ -3,7 +3,7 @@ import { profileIconUrl } from './ranks.js';
 import { formatDate, formatDecimal, formatInt, formatPercent, formatPlaytime, plural } from './format.js';
 import { usePolling } from './usePolling.js';
 
-const REFRESH_INTERVAL = 120_000;
+const REFRESH_INTERVAL = 5 * 60_000;
 
 const RANKINGS = [
   { key: 'kda', title: 'KDA', format: formatDecimal },

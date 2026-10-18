@@ -3,7 +3,7 @@ import PlayerRow from './PlayerRow.jsx';
 import PodiumCard from './PodiumCard.jsx';
 import { usePolling } from './usePolling.js';
 
-const REFRESH_INTERVAL = 60_000;
+const REFRESH_INTERVAL = 120_000;
 // Ordre d'affichage du podium : 2e, 1er, 3e
 const PODIUM_ORDER = [1, 0, 2];
 
@@ -22,6 +22,12 @@ export default function Leaderboard() {
 
       {data && (
         <>
+          {players.some((p) => p.stale) && (
+            <div className="notice">
+              L’API Riot est saturée : certains joueurs affichent leurs dernières données connues. Mise à jour
+              automatique dans quelques minutes.
+            </div>
+          )}
           <section className="podium">
             {PODIUM_ORDER.map((i) =>
               players[i] ? <PodiumCard key={players[i].riotId} player={players[i]} position={i + 1} /> : null

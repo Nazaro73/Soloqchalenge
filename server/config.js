@@ -15,14 +15,18 @@ export const PLAYERS = [
 export const REGIONAL_HOST = 'https://europe.api.riotgames.com';
 export const PLATFORM_HOST = 'https://euw1.api.riotgames.com';
 
-// Limites d'une clé de développement Riot (à augmenter avec une clé de production)
+// Limites de la clé Riot (20/s et 100/2 min), avec une marge pour les autres instances
 export const RATE_LIMITS = [
-  { max: 20, window: 1_000 },
-  { max: 100, window: 120_000 },
+  { max: 18, window: 1_000 },
+  { max: 90, window: 120_000 },
 ];
 
-// Durée du cache du classement (ms)
-export const CACHE_TTL = 60_000;
+// Durée du cache du classement (ms). Si des joueurs n'ont pas pu être rafraîchis : PARTIAL_TTL
+export const CACHE_TTL = 2 * 60_000;
+export const PARTIAL_TTL = 30_000;
+
+// Fréquence de synchronisation des historiques de parties (ms)
+export const SYNC_TTL = 5 * 60_000;
 
 // Icône et niveau de profil changent rarement (ms)
 export const SUMMONER_TTL = 10 * 60_000;

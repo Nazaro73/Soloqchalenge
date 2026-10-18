@@ -1,5 +1,5 @@
 // Synchronisation incrémentale des parties classées solo du challenge
-import { PLAYERS, CHALLENGE_START, RANKED_SOLO_QUEUE, MATCH_SYNC_BUDGET, CACHE_TTL as SYNC_TTL } from './config.js';
+import { PLAYERS, CHALLENGE_START, RANKED_SOLO_QUEUE, MATCH_SYNC_BUDGET, SYNC_TTL } from './config.js';
 import { getPuuid, getMatchIds, getMatch } from './riot.js';
 import { store } from './store.js';
 
@@ -57,8 +57,9 @@ async function doSync() {
 
   for (const player of PLAYERS) {
     const riotId = `${player.gameName}#${player.tagLine}`;
+    let puuid = null;
     try {
-      const puuid = await getPuuid(player.gameName, player.tagLine);
+      puuid = await getPuuid(player.gameName, player.tagLine);
       const [ids, stored] = await Promise.all([challengeMatchIds(puuid), store.load(puuid)]);
 
       const missing = ids.filter((id) => !stored[id]);
@@ -86,7 +87,9 @@ async function doSync() {
       });
     } catch (err) {
       console.error(`Synchro ${riotId} :`, err.message);
-      results.push({ player, riotId, matches: {}, pending: 0, error: true });
+      // Riot indisponible : on garde au moins les parties déjà stockées
+      const matches = puuid ? await store.load(puuid).catch(() => ({})) : {};
+      results.push({ player, riotId, matches, pending: 0, error: true });
     }
   }
   return results;
@@ -95,12 +98,12 @@ async function doSync() {
 let syncing = null;
 let lastSync = { at: 0, results: null };
 
-// Une seule synchro à la fois, partagée entre le classement et les stats,
-// et réutilisée pendant SYNC_TTL s'il ne reste rien à récupérer
+// Une seule synchro à la fois, partagée entre le classement et les stats.
+// Résultat réutilisé pendant SYNC_TTL, ou 1 min s'il reste des parties à récupérer / des erreurs.
 export function syncMatches() {
-  const fresh = lastSync.results && Date.now() - lastSync.at < SYNC_TTL;
-  if (fresh && lastSync.results.every((r) => r.pending === 0 && !r.error)) {
-    return Promise.resolve(lastSync.results);
+  if (lastSync.results) {
+    const incomplete = lastSync.results.some((r) => r.pending > 0 || r.error);
+    if (Date.now() - lastSync.at < (incomplete ? 60_000 : SYNC_TTL)) return Promise.resolve(lastSync.results);
   }
   syncing ??= doSync()
     .then((results) => {

@@ -1,4 +1,5 @@
 import { REGIONAL_HOST, PLATFORM_HOST, RATE_LIMITS, SUMMONER_TTL } from './config.js';
+import { store } from './store.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -29,15 +30,31 @@ function acquireSlot() {
   return slot;
 }
 
-async function riotFetch(url, retries = 1) {
+// --- Pause globale après un 429 : on n'insiste pas, on répond tout de suite avec le cache ---
+let cooldownUntil = 0;
+
+function rateLimitError() {
+  const err = new Error('Riot API 429: limite atteinte');
+  err.status = 429;
+  return err;
+}
+
+async function riotFetch(url) {
+  if (Date.now() < cooldownUntil) throw rateLimitError();
   await acquireSlot();
+  if (Date.now() < cooldownUntil) throw rateLimitError();
+
   const res = await fetch(url, {
     headers: { 'X-Riot-Token': process.env.RIOT_API_KEY },
   });
-  if (res.status === 429 && retries > 0) {
-    const retryAfter = Number(res.headers.get('Retry-After') ?? 1);
-    await sleep(retryAfter * 1000);
-    return riotFetch(url, retries - 1);
+  if (res.status === 429) {
+    // Limite de l'application : tous les appels sont bloqués. Limite d'une méthode : seul cet appel échoue.
+    if (res.headers.get('X-Rate-Limit-Type') !== 'method') {
+      const retryAfter = Number(res.headers.get('Retry-After') ?? 10);
+      cooldownUntil = Math.max(cooldownUntil, Date.now() + retryAfter * 1000);
+      console.warn(`Limite API Riot atteinte : pause de ${retryAfter}s`);
+    }
+    throw rateLimitError();
   }
   if (!res.ok) {
     const body = await res.text();
@@ -63,11 +80,16 @@ const puuidStore = new Map();
 const leagueStore = new Map();
 const summonerStore = new Map();
 
+// Le puuid ne change jamais : gardé en mémoire et dans le stockage persistant
 export function getPuuid(gameName, tagLine) {
-  return cached(puuidStore, `${gameName}#${tagLine}`.toLowerCase(), Infinity, async () => {
+  const key = `${gameName}#${tagLine}`.toLowerCase();
+  return cached(puuidStore, key, Infinity, async () => {
+    const saved = await store.getValue(`puuid:${key}`).catch(() => null);
+    if (saved) return saved;
     const account = await riotFetch(
       `${REGIONAL_HOST}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
     );
+    store.setValue(`puuid:${key}`, account.puuid).catch(() => {});
     return account.puuid;
   });
 }
