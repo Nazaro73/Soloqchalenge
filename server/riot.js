@@ -33,6 +33,11 @@ function acquireSlot() {
 // --- Pause globale après un 429 : on n'insiste pas, on répond tout de suite avec le cache ---
 let cooldownUntil = 0;
 
+// Secondes restantes avant de pouvoir rappeler Riot (0 si pas de pause en cours)
+export function cooldownRemaining() {
+  return Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+}
+
 function rateLimitError() {
   const err = new Error('Riot API 429: limite atteinte');
   err.status = 429;
@@ -79,6 +84,11 @@ function cached(store, key, ttl, fn) {
 const puuidStore = new Map();
 const leagueStore = new Map();
 const summonerStore = new Map();
+
+// Puuid d'un joueur du challenge : celui de la config s'il est renseigné (aucun appel)
+export function playerPuuid(player) {
+  return player.puuid ? Promise.resolve(player.puuid) : getPuuid(player.gameName, player.tagLine);
+}
 
 // Le puuid ne change jamais : gardé en mémoire et dans le stockage persistant
 export function getPuuid(gameName, tagLine) {

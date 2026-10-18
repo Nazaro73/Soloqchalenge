@@ -1,6 +1,6 @@
 // Synchronisation incrémentale des parties classées solo du challenge
 import { PLAYERS, CHALLENGE_START, RANKED_SOLO_QUEUE, MATCH_SYNC_BUDGET, SYNC_TTL } from './config.js';
-import { getPuuid, getMatchIds, getMatch } from './riot.js';
+import { playerPuuid, getMatchIds, getMatch } from './riot.js';
 import { store } from './store.js';
 
 const START_SECONDS = Math.floor(new Date(CHALLENGE_START).getTime() / 1000);
@@ -59,7 +59,7 @@ async function doSync() {
     const riotId = `${player.gameName}#${player.tagLine}`;
     let puuid = null;
     try {
-      puuid = await getPuuid(player.gameName, player.tagLine);
+      puuid = await playerPuuid(player);
       const [ids, stored] = await Promise.all([challengeMatchIds(puuid), store.load(puuid)]);
 
       const missing = ids.filter((id) => !stored[id]);

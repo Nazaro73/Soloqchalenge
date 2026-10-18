@@ -1,7 +1,7 @@
 // Logique des routes API, partagée entre Express (local) et la fonction Vercel.
 // Chaque handler renvoie { status, body, maxAge } — maxAge = durée du cache CDN en secondes (0 = pas de cache).
 import { PLAYERS, CACHE_TTL, PARTIAL_TTL, LIVE_RANK_TTL, CHALLENGE_START } from './config.js';
-import { getPuuid, getSummoner, getLeagueEntries, getActiveGame } from './riot.js';
+import { playerPuuid, getSummoner, getLeagueEntries, getActiveGame, cooldownRemaining } from './riot.js';
 import { rankToPoints } from './points.js';
 import { challengeGames, computeStats, kdaOf } from './stats.js';
 import { syncMatches } from './sync.js';
@@ -49,7 +49,7 @@ function seedLastGood() {
 async function fetchPlayer(player) {
   const riotId = riotIdOf(player);
   try {
-    const puuid = await getPuuid(player.gameName, player.tagLine);
+    const puuid = await playerPuuid(player);
 
     const [summoner, entries, activeGame, staticData] = await Promise.all([
       getSummoner(puuid),
@@ -140,8 +140,10 @@ async function buildLeaderboard() {
 
   const complete = players.every((p) => !p.error && !p.stale);
   const data = { updatedAt: Date.now(), complete, players };
-  // Même partiel, le résultat est mis en cache (plus court) pour ne pas marteler l'API Riot
-  leaderboardCache = { data, expiresAt: Date.now() + (complete ? CACHE_TTL : PARTIAL_TTL) };
+  // Même partiel, le résultat est mis en cache pour ne pas marteler l'API Riot,
+  // et jamais moins longtemps que la pause demandée par Riot
+  const ttl = Math.max(complete ? CACHE_TTL : PARTIAL_TTL, cooldownRemaining() * 1000);
+  leaderboardCache = { data, expiresAt: Date.now() + ttl };
   if (players.some((p) => !p.error && !p.stale)) store.setValue('leaderboard', data).catch(() => {});
   return data;
 }
@@ -172,7 +174,7 @@ export async function statsHandler() {
       pending: synced.reduce((n, s) => n + s.pending, 0),
       ...computeStats(synced, sd),
     };
-    const ttl = complete && data.pending === 0 ? CACHE_TTL : PARTIAL_TTL;
+    const ttl = Math.max(complete && data.pending === 0 ? CACHE_TTL : PARTIAL_TTL, cooldownRemaining() * 1000);
     statsCache = { data, expiresAt: Date.now() + ttl };
   }
   const { data, expiresAt } = statsCache;
@@ -187,7 +189,7 @@ export async function liveGameHandler(gameName, tagLine) {
   const riotId = riotIdOf(player);
 
   try {
-    const puuid = await getPuuid(player.gameName, player.tagLine);
+    const puuid = await playerPuuid(player);
     const game = await getActiveGame(puuid);
     if (!game) return { status: 200, body: { inGame: false, riotId }, maxAge: 30 };
 
@@ -196,7 +198,9 @@ export async function liveGameHandler(gameName, tagLine) {
       game.participants.map(async (p) => {
         const entries = p.puuid ? await getLeagueEntries(p.puuid, LIVE_RANK_TTL).catch(() => null) : null;
         const solo = soloQueue(entries);
-        const challenger = PLAYERS.find((cp) => riotIdOf(cp).toLowerCase() === p.riotId?.toLowerCase());
+        const challenger = PLAYERS.find(
+          (cp) => (cp.puuid && cp.puuid === p.puuid) || riotIdOf(cp).toLowerCase() === p.riotId?.toLowerCase()
+        );
         return {
           riotId: p.riotId ?? 'Bot',
           teamId: p.teamId,
