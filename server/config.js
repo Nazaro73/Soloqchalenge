@@ -65,6 +65,13 @@ export const PLAYERS = [
     adjustment: 0,
     puuid: 'sRVoAg8_RaU0u-OCTFr0DciXnREM2U2Z-IuMO1Bimh7uTMTKWr-tnkfgyZ9g8xGrOeSLOxlkTwz7og',
   },
+  {
+    gameName: 'Shacekko73',
+    tagLine: 'EUW',
+    realName: 'Antonio',
+    adjustment: 0,
+    puuid: 'dU3ieGlD33EoJ8YOqPQdCsURO1Kgu8rNGJRFmrbQt3Tn4tWHZtZ7jUiamjODeOmYA5EpiBad-hiS0w',
+  },
 ];
 
 // Routage Riot : compte et matchs (regional), LoL (plateforme)
