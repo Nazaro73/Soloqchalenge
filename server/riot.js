@@ -1,4 +1,4 @@
-import { REGIONAL_HOST, PLATFORM_HOST, RATE_LIMITS } from './config.js';
+import { REGIONAL_HOST, PLATFORM_HOST, RATE_LIMITS, SUMMONER_TTL } from './config.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -61,6 +61,7 @@ function cached(store, key, ttl, fn) {
 
 const puuidStore = new Map();
 const leagueStore = new Map();
+const summonerStore = new Map();
 
 export function getPuuid(gameName, tagLine) {
   return cached(puuidStore, `${gameName}#${tagLine}`.toLowerCase(), Infinity, async () => {
@@ -72,7 +73,9 @@ export function getPuuid(gameName, tagLine) {
 }
 
 export function getSummoner(puuid) {
-  return riotFetch(`${PLATFORM_HOST}/lol/summoner/v4/summoners/by-puuid/${puuid}`);
+  return cached(summonerStore, puuid, SUMMONER_TTL, () =>
+    riotFetch(`${PLATFORM_HOST}/lol/summoner/v4/summoners/by-puuid/${puuid}`)
+  );
 }
 
 export function getLeagueEntries(puuid, ttl = 0) {

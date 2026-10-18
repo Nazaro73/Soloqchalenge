@@ -5,6 +5,10 @@ export const PLAYERS = [
   { gameName: 'Cerageirth', tagLine: 'EUW', adjustment: -200 },
   { gameName: 'Fouteur2Bordel', tagLine: 'DZ73', adjustment: -200 },
   { gameName: 'Rebzapdnyar', tagLine: 'EUW', adjustment: -200 },
+  { gameName: 'Tokebscarrect', tagLine: '1478', adjustment: 0 },
+  { gameName: 'Wellooz73', tagLine: 'EUW', adjustment: 0 },
+  { gameName: 'neterent', tagLine: '7657', adjustment: 0 },
+  { gameName: 'Giefilic', tagLine: '9625', adjustment: 0 },
 ];
 
 // Routage Riot : compte et matchs (regional), LoL (plateforme)
@@ -19,6 +23,9 @@ export const RATE_LIMITS = [
 
 // Durée du cache du classement (ms)
 export const CACHE_TTL = 60_000;
+
+// Icône et niveau de profil changent rarement (ms)
+export const SUMMONER_TTL = 10 * 60_000;
 
 // Durée du cache des rangs des joueurs adverses/alliés en partie (ms)
 export const LIVE_RANK_TTL = 5 * 60_000;

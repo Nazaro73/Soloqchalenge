@@ -1,5 +1,5 @@
 // Synchronisation incrémentale des parties classées solo du challenge
-import { PLAYERS, CHALLENGE_START, RANKED_SOLO_QUEUE, MATCH_SYNC_BUDGET } from './config.js';
+import { PLAYERS, CHALLENGE_START, RANKED_SOLO_QUEUE, MATCH_SYNC_BUDGET, CACHE_TTL as SYNC_TTL } from './config.js';
 import { getPuuid, getMatchIds, getMatch } from './riot.js';
 import { store } from './store.js';
 
@@ -93,9 +93,20 @@ async function doSync() {
 }
 
 let syncing = null;
+let lastSync = { at: 0, results: null };
 
-// Une seule synchro à la fois, partagée entre le classement et les stats
+// Une seule synchro à la fois, partagée entre le classement et les stats,
+// et réutilisée pendant SYNC_TTL s'il ne reste rien à récupérer
 export function syncMatches() {
-  syncing ??= doSync().finally(() => (syncing = null));
+  const fresh = lastSync.results && Date.now() - lastSync.at < SYNC_TTL;
+  if (fresh && lastSync.results.every((r) => r.pending === 0 && !r.error)) {
+    return Promise.resolve(lastSync.results);
+  }
+  syncing ??= doSync()
+    .then((results) => {
+      lastSync = { at: Date.now(), results };
+      return results;
+    })
+    .finally(() => (syncing = null));
   return syncing;
 }
