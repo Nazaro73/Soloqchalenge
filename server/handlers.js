@@ -170,6 +170,7 @@ async function buildLeaderboard() {
   const data = {
     updatedAt: Date.now(),
     complete,
+    storage: store.kind,
     progress: {
       players: playersOk,
       total: players.length,
