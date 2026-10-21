@@ -69,7 +69,7 @@ export const PLAYERS = [
     gameName: 'Monkie',
     tagLine: '5147',
     realName: 'Antonio',
-    adjustment: -200,
+    adjustment: 0,
     puuid: '5ipwnrtG0b9ahRV807349iMC7lpbUi2pWCOgOytlPtKq6o-mJobneN5rkL0NabAcnpCTYf6SYLF0JA',
   },
 ];
