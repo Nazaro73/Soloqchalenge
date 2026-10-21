@@ -34,6 +34,11 @@ function aggregate({ player, riotId, matches }) {
   const sum = (key) => games.reduce((s, g) => s + g[key], 0);
   const seconds = sum('duration');
 
+  // CS/min hors parties support (un support ne farm pas, ça fausserait la moyenne)
+  const farmGames = games.filter((g) => g.role !== 'UTILITY');
+  const farmSeconds = farmGames.reduce((s, g) => s + g.duration, 0);
+  const farmCs = farmGames.reduce((s, g) => s + g.cs, 0);
+
   const champions = new Map();
   for (const g of games) champions.set(g.champ, (champions.get(g.champ) ?? 0) + 1);
 
@@ -49,7 +54,8 @@ function aggregate({ player, riotId, matches }) {
     kills: sum('k'),
     deaths: sum('d'),
     assists: sum('a'),
-    csPerMin: seconds > 0 ? sum('cs') / (seconds / 60) : 0,
+    csPerMin: farmSeconds > 0 ? farmCs / (farmSeconds / 60) : 0,
+    csGames: farmGames.length,
     pings: sum('pings'),
     flash: sum('flash'),
     soloKills: sum('solo'),
@@ -97,7 +103,7 @@ export function computeStats(synced, sd) {
         .filter((p) => p[key] > 0)
         .sort((a, b) => b[key] - a[key])
         .slice(0, 5)
-        .map((p) => ({ ...ref(p), value: p[key] })),
+        .map((p) => ({ ...ref(p), value: p[key], ...(key === 'csPerMin' && { games: p.csGames }) })),
     ])
   );
 
