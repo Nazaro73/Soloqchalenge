@@ -1,10 +1,17 @@
 // Logique des routes API, partagée entre Express (local) et la fonction Vercel.
 // Chaque handler renvoie { status, body, maxAge } — maxAge = durée du cache CDN en secondes (0 = pas de cache).
-import { PLAYERS, CACHE_TTL, PARTIAL_TTL, LIVE_RANK_TTL, CHALLENGE_START } from './config.js';
-import { playerPuuid, getSummoner, getLeagueEntries, getActiveGame, cooldownRemaining } from './riot.js';
+import { PLAYERS, CACHE_TTL, PARTIAL_TTL, LIVE_RANK_TTL, LEAGUE_TTL, CHALLENGE_START } from './config.js';
+import {
+  playerPuuid,
+  getSummoner,
+  getLeagueEntries,
+  getActiveGame,
+  cooldownRemaining,
+  invalidateLeague,
+} from './riot.js';
 import { rankToPoints } from './points.js';
 import { challengeGames, computeStats, kdaOf } from './stats.js';
-import { pendingMatches, syncComplete, syncMatches } from './sync.js';
+import { markGameEnded, pendingMatches, syncComplete, syncMatches } from './sync.js';
 import { getStaticData, queueName } from './staticData.js';
 import { store } from './store.js';
 
@@ -56,10 +63,18 @@ async function fetchPlayer(player) {
   try {
     const puuid = await playerPuuid(player);
 
-    const [summoner, entries, activeGame, staticData] = await Promise.all([
+    // Seul appel systématique : savoir si le joueur est en partie
+    const activeGame = await getActiveGame(puuid);
+    // Le joueur était en partie et ne l'est plus : rang et historique ont changé
+    if (fresh?.inGame && !activeGame) {
+      invalidateLeague(puuid);
+      markGameEnded(puuid);
+    }
+
+    // Rang : en cache jusqu'à la prochaine fin de partie (ou LEAGUE_TTL) ; profil : quelques heures
+    const [summoner, entries, staticData] = await Promise.all([
       getSummoner(puuid),
-      getLeagueEntries(puuid),
-      getActiveGame(puuid),
+      getLeagueEntries(puuid, LEAGUE_TTL),
       getStaticData(),
     ]);
     const solo = soloQueue(entries);

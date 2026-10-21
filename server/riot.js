@@ -126,6 +126,7 @@ function cached(store, key, ttl, fn) {
 const puuidStore = new Map();
 const leagueStore = new Map();
 const summonerStore = new Map();
+const activeGameStore = new Map();
 
 // Puuid d'un joueur du challenge : celui de la config s'il est renseigné (aucun appel)
 export function playerPuuid(player) {
@@ -152,6 +153,11 @@ export function getSummoner(puuid) {
   );
 }
 
+// Force le prochain getLeagueEntries à redemander le rang (fin de partie, nouvelle partie trouvée)
+export function invalidateLeague(puuid) {
+  leagueStore.delete(puuid);
+}
+
 export function getLeagueEntries(puuid, ttl = 0) {
   return cached(leagueStore, puuid, ttl, () =>
     riotFetch(`${PLATFORM_HOST}/lol/league/v4/entries/by-puuid/${puuid}`)
@@ -159,13 +165,18 @@ export function getLeagueEntries(puuid, ttl = 0) {
 }
 
 // Renvoie null si le joueur n'est pas en partie
-export async function getActiveGame(puuid) {
-  try {
-    return await riotFetch(`${PLATFORM_HOST}/lol/spectator/v5/active-games/by-summoner/${puuid}`);
-  } catch (err) {
-    if (err.status === 404) return null;
-    throw err;
-  }
+// Partagé entre le classement et la page de partie en cours : un appel par joueur toutes les 20 s au plus
+const ACTIVE_GAME_TTL = 20_000;
+
+export function getActiveGame(puuid) {
+  return cached(activeGameStore, puuid, ACTIVE_GAME_TTL, async () => {
+    try {
+      return await riotFetch(`${PLATFORM_HOST}/lol/spectator/v5/active-games/by-summoner/${puuid}`);
+    } catch (err) {
+      if (err.status === 404) return null;
+      throw err;
+    }
+  });
 }
 
 export function getMatchIds(puuid, params) {

@@ -1,6 +1,14 @@
 // Synchronisation incrémentale des parties classées solo du challenge
-import { PLAYERS, CHALLENGE_START, RANKED_SOLO_QUEUE, MATCH_SYNC_BUDGET, SYNC_TTL } from './config.js';
-import { playerPuuid, getMatchIds, getMatch, remainingAppCalls } from './riot.js';
+import {
+  PLAYERS,
+  CHALLENGE_START,
+  RANKED_SOLO_QUEUE,
+  MATCH_SYNC_BUDGET,
+  SYNC_TTL,
+  MATCH_CHECK_TTL,
+  GAME_END_WINDOW,
+} from './config.js';
+import { playerPuuid, getMatchIds, getMatch, remainingAppCalls, invalidateLeague } from './riot.js';
 import { store } from './store.js';
 
 const START_SECONDS = Math.floor(new Date(CHALLENGE_START).getTime() / 1000);
@@ -68,19 +76,51 @@ function deferredSync() {
   );
 }
 
+// --- Quels joueurs interroger ? Une nouvelle partie n'apparaît qu'après la fin d'une partie ---
+const lastChecked = new Map();
+const recentlyEnded = new Map();
+
+// Appelé par le classement quand un joueur vu en partie ne l'est plus
+export function markGameEnded(puuid) {
+  recentlyEnded.set(puuid, Date.now() + GAME_END_WINDOW);
+}
+
+function needsCheck(puuid, prev) {
+  const now = Date.now();
+  if (!prev || prev.error || prev.deferred || prev.pending !== 0) return true;
+  if ((recentlyEnded.get(puuid) ?? 0) > now) return true;
+  return now - (lastChecked.get(puuid) ?? 0) > MATCH_CHECK_TTL;
+}
+
 async function doSync() {
+  const targets = await Promise.all(
+    PLAYERS.map(async (player) => {
+      const riotId = `${player.gameName}#${player.tagLine}`;
+      const puuid = await playerPuuid(player).catch(() => null);
+      const prev = previousResult(riotId);
+      return { player, riotId, puuid, prev, check: !puuid || needsCheck(puuid, prev) };
+    })
+  );
+  const toCheck = targets.filter((t) => t.check).length;
+  if (toCheck === 0) return targets.map((t) => t.prev);
+
   const available = remainingAppCalls() - QUOTA_RESERVE;
-  if (available < PLAYERS.length) return deferredSync();
-  // Une liste d'ids par joueur, le reste du quota pour le détail des parties
-  let budget = Math.min(MATCH_SYNC_BUDGET, available - PLAYERS.length);
+  if (available < toCheck) return deferredSync();
+  // Une liste d'ids par joueur interrogé, le reste du quota pour le détail des parties
+  let budget = Math.min(MATCH_SYNC_BUDGET, available - toCheck);
   const results = [];
 
-  for (const player of PLAYERS) {
-    const riotId = `${player.gameName}#${player.tagLine}`;
-    let puuid = null;
+  for (const { player, riotId, prev, check, puuid: knownPuuid } of targets) {
+    // Aucune partie n'a pu se terminer depuis la dernière vérification : rien à demander
+    if (!check) {
+      results.push(prev);
+      continue;
+    }
+    let puuid = knownPuuid;
     try {
-      puuid = await playerPuuid(player);
+      puuid ??= await playerPuuid(player);
       const [ids, stored] = await Promise.all([challengeMatchIds(puuid), store.load(puuid)]);
+      lastChecked.set(puuid, Date.now());
 
       const missing = ids.filter((id) => !stored[id]);
       const toFetch = missing.slice(0, Math.max(budget, 0));
@@ -98,6 +138,8 @@ async function doSync() {
         })
       );
       await store.save(puuid, fetched);
+      // Nouvelle partie jouée : le rang (LP) a changé
+      if (Object.values(fetched).some((m) => !m.skip)) invalidateLeague(puuid);
 
       results.push({
         player,
@@ -109,7 +151,6 @@ async function doSync() {
       console.error(`Synchro ${riotId} :`, err.message);
       // Riot indisponible : on garde au moins les parties déjà connues
       const stored = puuid ? await store.load(puuid).catch(() => ({})) : {};
-      const prev = previousResult(riotId);
       results.push({ player, riotId, matches: { ...prev?.matches, ...stored }, pending: prev?.pending ?? null, error: true });
     }
   }

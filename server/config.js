@@ -90,14 +90,26 @@ export const CACHE_TTL = 2 * 60_000;
 // Court sans risque : un rafraîchissement partiel ne redemande que ce qui manque, dans la limite du quota
 export const PARTIAL_TTL = 20_000;
 
-// Fréquence de synchronisation des historiques de parties (ms)
-export const SYNC_TTL = 5 * 60_000;
+// Fréquence de synchronisation des historiques (ms). Peu coûteux : seuls les joueurs
+// susceptibles d'avoir une nouvelle partie sont interrogés (voir sync.js).
+export const SYNC_TTL = 2 * 60_000;
+
+// Un rang ne change qu'après une partie : rafraîchi à la fin de chaque partie détectée,
+// sinon au plus tard toutes les LEAGUE_TTL (filet de sécurité) (ms)
+export const LEAGUE_TTL = 15 * 60_000;
+
+// Historique d'un joueur revérifié toutes les MATCH_CHECK_TTL même sans fin de partie détectée (ms)
+export const MATCH_CHECK_TTL = 30 * 60_000;
+
+// Après la fin d'une partie, son historique est revérifié pendant cette durée :
+// la partie met une à deux minutes à apparaître dans l'API (ms)
+export const GAME_END_WINDOW = 10 * 60_000;
 
 // Icône et niveau de profil changent rarement (ms)
-export const SUMMONER_TTL = 60 * 60_000;
+export const SUMMONER_TTL = 6 * 60 * 60_000;
 
 // Durée du cache des rangs des joueurs adverses/alliés en partie (ms)
-export const LIVE_RANK_TTL = 5 * 60_000;
+export const LIVE_RANK_TTL = 30 * 60_000;
 
 export const RANKED_SOLO_QUEUE = 420;
 
