@@ -3,8 +3,36 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const REDIS_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+// Vercel peut préfixer les variables (ex. STORAGE_KV_REST_API_URL) selon la connexion de la base :
+// on accepte toutes les variantes, et à défaut on déduit l'URL REST et le jeton de l'URL rediss://.
+const envEndingWith = (...suffixes) =>
+  Object.keys(process.env).find((key) => suffixes.some((s) => key === s || key.endsWith(`_${s}`)) && process.env[key]);
+
+function redisConfig() {
+  const urlKey = envEndingWith('KV_REST_API_URL', 'UPSTASH_REDIS_REST_URL');
+  const tokenKey = envEndingWith('KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_TOKEN');
+  if (urlKey && tokenKey) return { url: process.env[urlKey], token: process.env[tokenKey] };
+
+  const connKey = envEndingWith('KV_URL', 'REDIS_URL');
+  if (connKey) {
+    try {
+      const conn = new URL(process.env[connKey]);
+      if (conn.hostname.endsWith('upstash.io') && conn.password) {
+        return { url: `https://${conn.hostname}`, token: decodeURIComponent(conn.password) };
+      }
+    } catch {
+      // URL invalide : stockage fichier
+    }
+  }
+  return null;
+}
+
+const redisConf = redisConfig();
+const REDIS_URL = redisConf?.url;
+const REDIS_TOKEN = redisConf?.token;
+
+// Noms (jamais les valeurs) des variables de stockage vues par le serveur, pour diagnostiquer
+export const storageEnvNames = Object.keys(process.env).filter((key) => /KV_|REDIS|UPSTASH/.test(key)).sort();
 
 const matchesKey = (puuid) => `soloq:matches:${puuid}`;
 const valueKey = (key) => `soloq:kv:${key}`;

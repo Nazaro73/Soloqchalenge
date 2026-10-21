@@ -13,7 +13,7 @@ import { rankToPoints } from './points.js';
 import { challengeGames, computeStats, kdaOf } from './stats.js';
 import { markGameEnded, pendingMatches, syncComplete, syncMatches } from './sync.js';
 import { getStaticData, queueName } from './staticData.js';
-import { store } from './store.js';
+import { store, storageEnvNames } from './store.js';
 
 function errorLabel(status) {
   if (status === 404) return 'Compte introuvable';
@@ -171,6 +171,7 @@ async function buildLeaderboard() {
     updatedAt: Date.now(),
     complete,
     storage: store.kind,
+    ...(store.kind !== 'redis' && { storageEnv: storageEnvNames }),
     progress: {
       players: playersOk,
       total: players.length,
