@@ -27,14 +27,14 @@ export const PLAYERS = [
     gameName: 'Fouteur2Bordel',
     tagLine: 'DZ73',
     realName: 'Abdel-Rahim',
-    adjustment: -200,
+    adjustment: 0,
     puuid: 'GNdxGsyeCMZaDA7bW_bOnHQblEE_lewFtN1gqDzGQTsXRHvGa8-Ow1D75ASn78JUkDDHKNvDLjRbQA',
   },
   {
     gameName: 'Rebzapdnyar',
     tagLine: 'EUW',
     realName: 'Chahine',
-    adjustment: -200,
+    adjustment: 0,
     puuid: 'cBxpfmw6NA7QUnOLABVv-J6IlpI6D5k5cqU5tL_8rb44uxgXtgkZVuITE7a_8bYGak6d0ckOw4hXdQ',
   },
   {
