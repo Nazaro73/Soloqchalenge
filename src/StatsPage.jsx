@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
+import LoadingScreen, { useLoadingGate, useMatchProgress } from './LoadingScreen.jsx';
 import { SectionTitle } from './Ornament.jsx';
 import { profileIconUrl } from './ranks.js';
 import { formatDate, formatDecimal, formatInt, formatPercent, formatPlaytime, plural } from './format.js';
 import { usePolling } from './usePolling.js';
 
 const REFRESH_INTERVAL = 5 * 60_000;
+const LOADING_INTERVAL = 10_000;
 
 const RANKINGS = [
   { key: 'kda', title: 'KDA', format: formatDecimal },
@@ -101,10 +104,16 @@ function ChampionChip({ champion, children }) {
 }
 
 export default function StatsPage() {
-  const stats = usePolling('/api/stats', REFRESH_INTERVAL);
+  const [complete, setComplete] = useState(false);
+  const stats = usePolling('/api/stats', complete ? REFRESH_INTERVAL : LOADING_INTERVAL);
   const leaderboard = usePolling('/api/leaderboard', REFRESH_INTERVAL);
   const data = stats.data;
   const board = leaderboard.data?.players ?? [];
+  useEffect(() => setComplete(Boolean(data?.complete)), [data]);
+
+  const showLoader = useLoadingGate(complete || Boolean(stats.error));
+  const matchStep = useMatchProgress(data?.pending);
+  if (showLoader) return <LoadingScreen title="Analyse des parties" steps={[matchStep]} />;
 
   return (
     <div className="page page-wide">
@@ -114,9 +123,6 @@ export default function StatsPage() {
       </p>
 
       {stats.error && <div className="alert">Impossible de charger les statistiques : {stats.error}</div>}
-      {!data && stats.loading && (
-        <div className="loading">Analyse des parties… (la première synchro peut prendre un moment)</div>
-      )}
 
       {data && (
         <>

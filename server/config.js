@@ -79,14 +79,16 @@ export const REGIONAL_HOST = 'https://europe.api.riotgames.com';
 export const PLATFORM_HOST = 'https://euw1.api.riotgames.com';
 
 // Limites de la clé Riot (20/s et 100/2 min), avec une marge pour les autres instances
+// qui partagent la même clé (Vercel, local) : les appels sont étalés à 8 par seconde.
 export const RATE_LIMITS = [
-  { max: 18, window: 1_000 },
+  { max: 8, window: 1_000 },
   { max: 90, window: 120_000 },
 ];
 
 // Durée du cache du classement (ms). Si des joueurs n'ont pas pu être rafraîchis : PARTIAL_TTL
 export const CACHE_TTL = 2 * 60_000;
-export const PARTIAL_TTL = 90_000;
+// Court sans risque : un rafraîchissement partiel ne redemande que ce qui manque, dans la limite du quota
+export const PARTIAL_TTL = 20_000;
 
 // Fréquence de synchronisation des historiques de parties (ms)
 export const SYNC_TTL = 5 * 60_000;

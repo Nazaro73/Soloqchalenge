@@ -4,7 +4,7 @@ import { PLAYERS, CACHE_TTL, PARTIAL_TTL, LIVE_RANK_TTL, CHALLENGE_START } from 
 import { playerPuuid, getSummoner, getLeagueEntries, getActiveGame, cooldownRemaining } from './riot.js';
 import { rankToPoints } from './points.js';
 import { challengeGames, computeStats, kdaOf } from './stats.js';
-import { syncMatches } from './sync.js';
+import { pendingMatches, syncComplete, syncMatches } from './sync.js';
 import { getStaticData, queueName } from './staticData.js';
 import { store } from './store.js';
 
@@ -48,6 +48,11 @@ function seedLastGood() {
 
 async function fetchPlayer(player) {
   const riotId = riotIdOf(player);
+  // Joueur déjà rafraîchi récemment : aucun appel (seuls les joueurs manquants sont redemandés)
+  const fresh = lastGood.get(riotId);
+  if (fresh?.fetchedAt && Date.now() - fresh.fetchedAt < CACHE_TTL) {
+    return { ...fresh, realName: player.realName, adjustment: player.adjustment, totalPoints: fresh.basePoints + player.adjustment };
+  }
   try {
     const puuid = await playerPuuid(player);
 
@@ -88,9 +93,10 @@ async function fetchPlayer(player) {
       basePoints,
       adjustment: player.adjustment,
       totalPoints: basePoints + player.adjustment,
+      fetchedAt: Date.now(),
     };
     lastGood.set(riotId, data);
-    return data;
+    return { ...data };
   } catch (err) {
     console.error(`Erreur pour ${riotId}:`, err.message);
     const previous = lastGood.get(riotId);
@@ -130,7 +136,9 @@ let leaderboardInFlight = null;
 
 async function buildLeaderboard() {
   await seedLastGood();
-  const [players, synced] = await Promise.all([Promise.all(PLAYERS.map(fetchPlayer)), safeSync()]);
+  // Rangs et parties en cours d'abord ; la synchro des historiques utilise le quota restant
+  const players = await Promise.all(PLAYERS.map(fetchPlayer));
+  const synced = await safeSync();
   // KDA moyen et bilan V/D sur les parties du challenge (placements compris :
   // Riot n'affiche ni rang ni victoires/défaites tant que les 5 placements ne sont pas finis)
   for (const p of players) {
@@ -142,8 +150,18 @@ async function buildLeaderboard() {
   }
   players.sort((a, b) => b.totalPoints - a.totalPoints);
 
-  const complete = players.every((p) => !p.error && !p.stale);
-  const data = { updatedAt: Date.now(), complete, players };
+  const playersOk = players.filter((p) => !p.error && !p.stale).length;
+  const complete = playersOk === players.length && syncComplete(synced);
+  const data = {
+    updatedAt: Date.now(),
+    complete,
+    progress: {
+      players: playersOk,
+      total: players.length,
+      pendingMatches: pendingMatches(synced),
+    },
+    players,
+  };
   // Même partiel, le résultat est mis en cache pour ne pas marteler l'API Riot,
   // et jamais moins longtemps que la pause demandée par Riot
   const ttl = Math.max(complete ? CACHE_TTL : PARTIAL_TTL, cooldownRemaining() * 1000);
@@ -171,14 +189,15 @@ export async function statsHandler() {
 
   if (!statsCache.data || Date.now() >= statsCache.expiresAt) {
     const [synced, sd] = await Promise.all([safeSync(), getStaticData()]);
-    const complete = synced.length === PLAYERS.length && synced.every((s) => !s.error);
+    const complete = syncComplete(synced);
     const data = {
       updatedAt: Date.now(),
       challengeStart: CHALLENGE_START,
-      pending: synced.reduce((n, s) => n + s.pending, 0),
+      complete,
+      pending: pendingMatches(synced),
       ...computeStats(synced, sd),
     };
-    const ttl = Math.max(complete && data.pending === 0 ? CACHE_TTL : PARTIAL_TTL, cooldownRemaining() * 1000);
+    const ttl = Math.max(complete ? CACHE_TTL : PARTIAL_TTL, cooldownRemaining() * 1000);
     statsCache = { data, expiresAt: Date.now() + ttl };
   }
   const { data, expiresAt } = statsCache;

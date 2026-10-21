@@ -836,6 +836,85 @@ a.name:hover { color: var(--gold-2); }
 .participant-wr { display: flex; flex-direction: column; align-items: flex-end; font-family: var(--font-num); }
 .note { color: var(--muted); font-size: 0.85rem; text-align: center; margin-top: 8px; }
 
+/* ---------- Écran de chargement ---------- */
+.loading-screen {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 40px 16px;
+  text-align: center;
+}
+.loading-emblem {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.loading-emblem .hex-logo { width: 56px; height: 56px; }
+.loading-emblem .hex-logo .core { animation: pulse 1.6s ease-in-out infinite; }
+.loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(200, 170, 110, 0.15);
+  border-top-color: var(--gold-2);
+  border-right-color: var(--hex-2);
+  box-shadow: 0 0 30px rgba(10, 200, 185, 0.12);
+  animation: spin 1.4s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-screen h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, var(--gold-1) 20%, var(--gold-2) 70%, var(--gold-4));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.loading-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.loading-steps li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  font-family: var(--font-num);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.loading-step-value { color: var(--gold-text); font-weight: 600; }
+.loading-steps li.done .loading-step-value { color: var(--win); }
+.loading-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  background: rgba(200, 170, 110, 0.12);
+  overflow: hidden;
+}
+.loading-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--hex-4), var(--hex-2));
+  box-shadow: 0 0 8px rgba(10, 200, 185, 0.5);
+  transition: width 0.4s var(--ease);
+}
+.loading-hint { max-width: 360px; margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
   .podium { grid-template-columns: 1fr; align-items: stretch; margin-top: 28px; }

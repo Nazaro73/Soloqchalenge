@@ -30,6 +30,34 @@ function acquireSlot() {
   return slot;
 }
 
+// --- Consommation réelle de la clé, toutes instances confondues (lue dans les en-têtes Riot) ---
+const QUOTA_WINDOW = 120;
+let appUsage = { count: 0, limit: 100, at: 0 };
+
+function windowValue(header) {
+  // "38:120,1:1" -> 38 (valeur de la fenêtre de 120 s)
+  const entry = header
+    ?.split(',')
+    .map((part) => part.split(':').map(Number))
+    .find(([, window]) => window === QUOTA_WINDOW);
+  return entry?.[0];
+}
+
+function readAppUsage(res) {
+  const count = windowValue(res.headers.get('X-App-Rate-Limit-Count'));
+  if (count == null) return;
+  appUsage = { count, limit: windowValue(res.headers.get('X-App-Rate-Limit')) ?? 100, at: Date.now() };
+}
+
+// Appels encore disponibles sur la fenêtre de 2 min (estimation prudente)
+export function remainingAppCalls() {
+  const now = Date.now();
+  const local = callTimes.filter((t) => now - t < QUOTA_WINDOW * 1000).length;
+  const sinceHeader = callTimes.filter((t) => t > appUsage.at).length;
+  const reported = now - appUsage.at < QUOTA_WINDOW * 1000 ? appUsage.count + sinceHeader : 0;
+  return Math.max(0, appUsage.limit - Math.max(local, reported));
+}
+
 // --- Pause globale après un 429 : on n'insiste pas, on répond tout de suite avec le cache ---
 let cooldownUntil = 0;
 
@@ -44,20 +72,34 @@ function rateLimitError() {
   return err;
 }
 
-async function riotFetch(url) {
-  if (Date.now() < cooldownUntil) throw rateLimitError();
+// Pause courte (limite par seconde) : on attend et on réessaie. Au-delà, on abandonne tout de suite.
+const SHORT_PAUSE = 2;
+
+async function riotFetch(url, retries = 2) {
+  const waitShortCooldown = async () => {
+    const remaining = cooldownRemaining();
+    if (remaining > SHORT_PAUSE) throw rateLimitError();
+    if (remaining > 0) await sleep(cooldownUntil - Date.now());
+  };
+
+  await waitShortCooldown();
   await acquireSlot();
-  if (Date.now() < cooldownUntil) throw rateLimitError();
+  await waitShortCooldown();
 
   const res = await fetch(url, {
     headers: { 'X-Riot-Token': process.env.RIOT_API_KEY },
   });
+  readAppUsage(res);
   if (res.status === 429) {
-    // Limite de l'application : tous les appels sont bloqués. Limite d'une méthode : seul cet appel échoue.
+    const retryAfter = Number(res.headers.get('Retry-After') ?? 10);
+    // Limite de l'application : tous les appels sont mis en pause. Limite d'une méthode : seul cet appel échoue.
     if (res.headers.get('X-Rate-Limit-Type') !== 'method') {
-      const retryAfter = Number(res.headers.get('Retry-After') ?? 10);
       cooldownUntil = Math.max(cooldownUntil, Date.now() + retryAfter * 1000);
       console.warn(`Limite API Riot atteinte : pause de ${retryAfter}s`);
+    }
+    if (retryAfter <= SHORT_PAUSE && retries > 0) {
+      await sleep(retryAfter * 1000);
+      return riotFetch(url, retries - 1);
     }
     throw rateLimitError();
   }
